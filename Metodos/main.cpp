@@ -106,6 +106,17 @@ void handleBufferOverload(){
 	}
 }
 
+void generateReport(){
+	
+	string contents = "Client #,Arrival Time,Dropped Packets,Successful Packets,Complete Frames,Departure Time\n";
+	
+	for(int i=0; i<MAX_CLIENTS; i++){
+		
+	}
+	
+	generateCSV("results.csv", contents);
+	cout << "Report generated..." << endl;
+}
 //Main
 
 int main(int argc, const char * argv[]) {
@@ -186,9 +197,7 @@ int main(int argc, const char * argv[]) {
     }
 	
 	//Generate CSV files from contents
-	string contents = "hello,there\nlitte,world";
-	generateCSV("results.csv", contents);
-	cout << "Report generated..." << endl;
+	generateReport();
 	
 	return 0;
 }
