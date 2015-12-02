@@ -12,10 +12,10 @@
 #include <string>
 
 #define TOTAL_ITERATIONS 1000000000
-#define MAX_CLIENTS 140
+#define MAX_CLIENTS 500
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
-#define FRAMES 12000
+#define FRAMES 2000
 #define MTU 1500
 
 int clients = 0, current_clients = 0;
@@ -28,7 +28,13 @@ int total_frames = FRAMES * MAX_CLIENTS;
 int buffer[MAX_CLIENTS];
 
 struct Client{
-	int arrival_time = 0, current_frame = 0, dropped_packets = 0, successful_packets = 0, complete_frames = 0, finish_time = -1;
+	int arrival_time = 0,
+		current_frame = 0,
+		dropped_packets = 0,
+		successful_packets = 0,
+		complete_frames = 0,
+		frames_delay = 0,
+		finish_time = -1;
 };
 
 Client client_list[MAX_CLIENTS];
@@ -37,8 +43,7 @@ using namespace std;
 
 //File handling
 
-void loadInitialData()
-{
+void loadInitialData(){
 	
 	//Load frames from file
 	ifstream infile;
@@ -56,21 +61,12 @@ void loadInitialData()
 	infile.close();
 }
 
-void generateCSV(string filename, string contents)
-{
+void generateCSV(string filename, string contents){
 	//Generate report as CSV
 	ofstream outfile;
 	outfile.open(filename);
 	outfile << contents;
 	outfile.close();
-}
-
-double calculateCompletedFrames(){
-    int frames_delivered = 0;
-    for(int i=0; i<MAX_CLIENTS; i++){
-        frames_delivered += client_list[i].complete_frames;
-    }
-    return (double)frames_delivered / (double)total_frames;
 }
 
 //Helper functions
@@ -115,6 +111,14 @@ void handleBufferOverload(){
 	}
 }
 
+double calculateCompletedFrames(){
+	int frames_delivered = 0;
+	for(int i=0; i<MAX_CLIENTS; i++){
+		frames_delivered += client_list[i].complete_frames;
+	}
+	return (double)frames_delivered / (double)total_frames;
+}
+
 void generateReport(){
 	
 	string contents = "Client #,Arrival Time,Dropped Packets,Successful Packets,Complete Frames,Departure Time\n";
@@ -126,9 +130,15 @@ void generateReport(){
 	generateCSV("results.csv", contents);
 	cout << "Report generated..." << endl;
 }
+
+int calculateQueueWaitTime(){
+	double expected_packets_sent = MAX_CLIENTS * 1.5 * 24;
+	return (1 / (BUFFER_MAX - expected_packets_sent)) * 1000000;
+}
+
 //Main
 
-int main(int argc, const char * argv[]) {
+int main(int argc, const char * argv[]){
 	
 	//Load frames and delays from txt files
 	loadInitialData();
@@ -190,13 +200,14 @@ int main(int argc, const char * argv[]) {
 					}
 					if(!error_flag){
 						client_list[i].complete_frames++;
+						int frame_delay = calculateQueueWaitTime() + delays[i];
+						client_list[i].frames_delay += frame_delay;
 					}
 					
 					client_list[i].current_frame++;
 				}
 			}
         }
-        
         
         //This is a new client arrival
         if (iterations % 2000000 == 0) {
@@ -213,8 +224,13 @@ int main(int argc, const char * argv[]) {
     }
 	
 	//Generate CSV files from contents
-    cout << "Percentage of complete delivered frames: " << calculateCompletedFrames() << endl;
 	generateReport();
+	
+	cout << endl << "--- STATS ---" << endl;
+    cout << "Percentage of complete delivered frames: " << calculateCompletedFrames() << endl;
+	cout << "W = " << calculateQueueWaitTime() << " microseconds" << endl;
+	
+	cout << client_list[0].frames_delay << endl;
 	
 	return 0;
 }
