@@ -12,17 +12,16 @@
 #include <string>
 
 #define TOTAL_ITERATIONS 1000000000
-#define MAX_CLIENTS 200
-#define k_CLIENTS 60
+#define MAX_CLIENTS 140
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
-#define FRAMES 2000
+#define FRAMES 12000
 #define MTU 1500
 
 int clients = 0, current_clients = 0;
 int iterations = 0;
 double time_passed = 0.0;
-int frames[2000], delays[2000];
+int frames[FRAMES], delays[FRAMES];
 int tot_buf_size = 0;
 
 int buffer[MAX_CLIENTS];
@@ -39,19 +38,18 @@ using namespace std;
 
 void loadInitialData()
 {
-	int lines = 2000;
 	
 	//Load frames from file
 	ifstream infile;
 	infile.open("frames.txt");
-	for(int i=0; i<lines; i++){
+	for(int i=0; i<FRAMES; i++){
 		infile >> frames[i];
 	}
 	infile.close();
 	
 	//Load delays from file
 	infile.open("delays.txt");
-	for(int i=0; i<lines; i++){
+	for(int i=0; i<FRAMES; i++){
 		infile >> delays[i];
 	}
 	infile.close();
