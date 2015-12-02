@@ -19,7 +19,7 @@ double time_passed = 0.0;
 int frames[2000], delays[2000];
 
 struct Client{
-	int arrival_time, current_frame, dropped_packets, complete_frames, finish_time;
+	int arrival_time = 0, current_frame = 0, dropped_packets = 0, successful_packets = 0, complete_frames = 0, finish_time = -1;
 };
 
 Client client_list[MAX_CLIENTS];
@@ -73,6 +73,10 @@ int main(int argc, const char * argv[]) {
         
         if (iterations % 2000000 == 0) {
             cout << "New client arrives time: " << iterations << " microseconds" << endl;
+			
+			Client new_client = *new Client;
+			new_client.arrival_time = iterations;
+			client_list[clients++] = new_client;
         }
         
         iterations++;
