@@ -11,11 +11,18 @@
 #include <math.h>
 
 #define TOTAL_ITERATIONS  10000000
+#define MAX_CLIENTS 500
 
 int clients = 0;
 int iterations = 0;
 double time_passed = 0.0;
 int frames[2000], delays[2000];
+
+struct Client{
+	int arrival_time, current_frame, dropped_packets, complete_frames, finish_time;
+};
+
+Client client_list[MAX_CLIENTS];
 
 using namespace std;
 
