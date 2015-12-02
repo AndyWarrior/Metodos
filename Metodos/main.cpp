@@ -14,11 +14,14 @@
 #define MAX_CLIENTS 500
 #define k_CLIENTS 60
 #define ERROR_CONSTANT 0.001
+#define BUFFER_MAX 4500
 
 int clients = 0, current_clients = 0;
 int iterations = 0;
 double time_passed = 0.0;
 int frames[2000], delays[2000];
+
+int buffer[MAX_CLIENTS];
 
 struct Client{
 	int arrival_time = 0, current_frame = 0, dropped_packets = 0, successful_packets = 0, complete_frames = 0, finish_time = -1;
@@ -65,6 +68,12 @@ int getPacketsForFrameSize(int size){
 	return ceil(size/1500);
 }
 
+void cleanBuffer(){
+	for(int i=0; i<MAX_CLIENTS; i++){
+		buffer[i] = 0;
+	}
+}
+
 //Main
 
 int main(int argc, const char * argv[]) {
@@ -72,6 +81,8 @@ int main(int argc, const char * argv[]) {
 	//Load frames and delays from txt files
 	loadInitialData();
 	cout << "Initial data loaded..." << endl;
+	
+	cleanBuffer();
 	
 	//Start simulation
     while (iterations <= TOTAL_ITERATIONS) {
@@ -94,12 +105,15 @@ int main(int argc, const char * argv[]) {
 							client_list[i].dropped_packets++;
 							error_flag = true;
 						}else{
+							//packet success
 							client_list[i].successful_packets++;
+							buffer[i]++;
 						}
 					}
 					if(!error_flag){
 						client_list[i].complete_frames++;
 					}
+					
 					client_list[i].current_frame++;
 				}
 			}
