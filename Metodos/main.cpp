@@ -12,8 +12,10 @@
 
 #define TOTAL_ITERATIONS  10000000
 #define MAX_CLIENTS 500
+#define k_CLIENTS 60
+#define ERROR_CONSTANT 0.001
 
-int clients = 0;
+int clients = 0, current_clients = 0;
 int iterations = 0;
 double time_passed = 0.0;
 int frames[2000], delays[2000];
@@ -25,6 +27,8 @@ struct Client{
 Client client_list[MAX_CLIENTS];
 
 using namespace std;
+
+//File handling
 
 void loadInitialData()
 {
@@ -55,6 +59,14 @@ void generateCSV(string filename, string contents)
 	outfile.close();
 }
 
+//Helper functions
+
+int getPacketsForFrameSize(int size){
+	return ceil(size/1500);
+}
+
+//Main
+
 int main(int argc, const char * argv[]) {
 	
 	//Load frames and delays from txt files
@@ -69,6 +81,28 @@ int main(int argc, const char * argv[]) {
         
         if (iterations % 41000 == 0) {
             cout << "Frame processing time: " << iterations << " microseconds" << endl;
+			
+			double prob_error = current_clients*ERROR_CONSTANT;
+			
+			for(int i=0; i<clients; i++){
+				if(client_list[i].finish_time == -1){ //client is in system
+					int packets = getPacketsForFrameSize(frames[client_list[i].current_frame]);
+					int error_flag = false;
+					for(int j=0; j<packets; j++){
+						if(rand() <= prob_error){
+							//packet error
+							client_list[i].dropped_packets++;
+							error_flag = true;
+						}else{
+							client_list[i].successful_packets++;
+						}
+					}
+					if(!error_flag){
+						client_list[i].complete_frames++;
+					}
+					client_list[i].current_frame++;
+				}
+			}
         }
         
         if (iterations % 2000000 == 0) {
@@ -77,6 +111,7 @@ int main(int argc, const char * argv[]) {
 			Client new_client = *new Client;
 			new_client.arrival_time = iterations;
 			client_list[clients++] = new_client;
+			current_clients++;
         }
         
         iterations++;
