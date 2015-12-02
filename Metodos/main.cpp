@@ -10,11 +10,12 @@
 #include <fstream>
 #include <math.h>
 
-#define TOTAL_ITERATIONS  10000000
+#define TOTAL_ITERATIONS  100000000
 #define MAX_CLIENTS 500
 #define k_CLIENTS 60
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
+#define FRAMES 2000
 
 int clients = 0, current_clients = 0;
 int iterations = 0;
@@ -74,6 +75,14 @@ void cleanBuffer(){
 	}
 }
 
+int getBufferSize(){
+	int size = 0;
+	for(int i=0; i<MAX_CLIENTS; i++){
+		size += buffer[i];
+	}
+	return size;
+}
+
 //Main
 
 int main(int argc, const char * argv[]) {
@@ -87,11 +96,26 @@ int main(int argc, const char * argv[]) {
 	//Start simulation
     while (iterations <= TOTAL_ITERATIONS) {
         if (iterations % 222 == 0) {
-            cout << "Departure time: " << iterations << " microseconds" << endl;
+            //cout << "Departure time: " << iterations << " microseconds" << endl;
+			
+			if(getBufferSize() > 0){
+				for(int i=0; i<MAX_CLIENTS; i++){
+					if(buffer[i] > 0){
+						//process current packets for this client
+						if(client_list[i].current_frame >= FRAMES){
+							//this are packets for the last frame for this client
+							client_list[i].finish_time = iterations;
+							current_clients--;
+						}
+					}
+				}
+				
+				cleanBuffer();
+			}
         }
         
         if (iterations % 41000 == 0) {
-            cout << "Frame processing time: " << iterations << " microseconds" << endl;
+            //cout << "Frame processing time: " << iterations << " microseconds" << endl;
 			
 			double prob_error = current_clients*ERROR_CONSTANT;
 			
@@ -120,7 +144,7 @@ int main(int argc, const char * argv[]) {
         }
         
         if (iterations % 2000000 == 0) {
-            cout << "New client arrives time: " << iterations << " microseconds" << endl;
+            //cout << "New client arrives time: " << iterations << " microseconds" << endl;
 			
 			Client new_client = *new Client;
 			new_client.arrival_time = iterations;
