@@ -16,6 +16,7 @@
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
 #define FRAMES 2000
+#define MTU 1500
 
 int clients = 0, current_clients = 0;
 int iterations = 0;
@@ -66,7 +67,11 @@ void generateCSV(string filename, string contents)
 //Helper functions
 
 int getPacketsForFrameSize(int size){
-	return ceil(size/1500);
+	if(size % MTU == 0){
+		return ceil(size/MTU);
+	}else{
+		return ceil(size/MTU) + 1;
+	}
 }
 
 void cleanBuffer(){
@@ -83,6 +88,24 @@ int getBufferSize(){
 	return size;
 }
 
+void handleBufferOverload(){
+	int size_before = 0, size_after = 0, overflow = -1;
+	
+	for(int i=0; i<MAX_CLIENTS; i++){
+		
+		if(overflow == 1){
+			buffer[i] = 0;
+		}else{
+			size_after += buffer[i];
+			if(size_after > BUFFER_MAX){
+				buffer[i] = BUFFER_MAX - size_before;
+				overflow = 1;
+			}
+		}
+		size_before = size_after;
+	}
+}
+
 //Main
 
 int main(int argc, const char * argv[]) {
@@ -95,10 +118,17 @@ int main(int argc, const char * argv[]) {
 	
 	//Start simulation
     while (iterations <= TOTAL_ITERATIONS) {
+
         if (iterations % 222 == 0) {
             //cout << "Departure time: " << iterations << " microseconds" << endl;
 			
 			if(getBufferSize() > 0){
+				
+				if(getBufferSize() > BUFFER_MAX){
+					cout << "Buffer is overloaded, dropped " << getBufferSize() - BUFFER_MAX << " packets"<< endl;
+					handleBufferOverload();
+				}
+			
 				for(int i=0; i<MAX_CLIENTS; i++){
 					if(buffer[i] > 0){
 						//process current packets for this client
@@ -160,5 +190,5 @@ int main(int argc, const char * argv[]) {
 	generateCSV("results.csv", contents);
 	cout << "Report generated..." << endl;
 	
-    return 0;
+	return 0;
 }
