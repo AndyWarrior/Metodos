@@ -12,7 +12,7 @@
 #include <string>
 
 #define TOTAL_ITERATIONS 1000000000
-#define MAX_CLIENTS 50
+#define MAX_CLIENTS 200
 #define k_CLIENTS 60
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
@@ -23,6 +23,7 @@ int clients = 0, current_clients = 0;
 int iterations = 0;
 double time_passed = 0.0;
 int frames[2000], delays[2000];
+int tot_buf_size = 0;
 
 int buffer[MAX_CLIENTS];
 
@@ -129,35 +130,37 @@ int main(int argc, const char * argv[]) {
 	cleanBuffer();
 	//Start simulation
     while (iterations <= TOTAL_ITERATIONS) {
-
+        
+        //This is a departure
         if (iterations % 222 == 0) {
             //cout << "Departure time: " << iterations << " microseconds" << endl;
-			
-			if(getBufferSize() > 0){
-				
-				if(getBufferSize() > BUFFER_MAX){
-					cout << "Buffer is overloaded, dropped " << getBufferSize() - BUFFER_MAX << " packets"<< endl;
-					handleBufferOverload();
-				}
-			
-				for(int i=0; i<MAX_CLIENTS; i++){
-					if(buffer[i] > 0){
-						//process current packets for this client
-						if(client_list[i].current_frame >= FRAMES){
-							//this are packets for the last frame for this client
-							client_list[i].finish_time = iterations;
-							current_clients--;
-                            if(current_clients == 0){
-                                iterations = TOTAL_ITERATIONS + 1;
+            if(getBufferSize() > BUFFER_MAX){
+                cout << "Buffer is overloaded, dropped " << getBufferSize() - BUFFER_MAX << " packets"<< endl;
+                handleBufferOverload();
+            }
+            
+            if (getBufferSize() > 0) {
+                for(int i=0; i<MAX_CLIENTS; i++){
+                    if (buffer[i] > 0) {
+                        buffer[i]--;
+                        if (buffer[i] == 0) {
+                            if(client_list[i].current_frame >= FRAMES){
+                                //this are packets for the last frame for this client
+                                client_list[i].finish_time = iterations;
+                                current_clients--;
+                                if(current_clients == 0){
+                                    iterations = TOTAL_ITERATIONS + 1;
+                                }
                             }
-						}
-					}
-				}
-				
-				cleanBuffer();
-			}
+                        }
+                        break;
+                    }
+                }
+            }
         }
         
+        
+        //This is the frame processing
         if (iterations % 41000 == 0) {
             //cout << "Frame processing time: " << iterations << " microseconds" << endl;
 			
@@ -175,6 +178,7 @@ int main(int argc, const char * argv[]) {
 							//packet success
 							client_list[i].successful_packets++;
 							buffer[i]++;
+                            tot_buf_size++;
 						}
 					}
 					if(!error_flag){
@@ -186,6 +190,8 @@ int main(int argc, const char * argv[]) {
 			}
         }
         
+        
+        //This is a new client arrival
         if (iterations % 2000000 == 0) {
             //cout << "New client arrives time: " << iterations << " microseconds" << endl;
             if(clients < MAX_CLIENTS){
