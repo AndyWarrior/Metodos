@@ -23,6 +23,7 @@ int iterations = 0;
 double time_passed = 0.0;
 int frames[FRAMES], delays[FRAMES];
 int tot_buf_size = 0;
+int total_frames = FRAMES * MAX_CLIENTS;
 
 int buffer[MAX_CLIENTS];
 
@@ -62,6 +63,14 @@ void generateCSV(string filename, string contents)
 	outfile.open(filename);
 	outfile << contents;
 	outfile.close();
+}
+
+double calculateCompletedFrames(){
+    int frames_delivered = 0;
+    for(int i=0; i<MAX_CLIENTS; i++){
+        frames_delivered += client_list[i].complete_frames;
+    }
+    return (double)frames_delivered / (double)total_frames;
 }
 
 //Helper functions
@@ -204,6 +213,7 @@ int main(int argc, const char * argv[]) {
     }
 	
 	//Generate CSV files from contents
+    cout << "Percentage of complete delivered frames: " << calculateCompletedFrames() << endl;
 	generateReport();
 	
 	return 0;
