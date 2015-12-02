@@ -9,9 +9,10 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <string>
 
-#define TOTAL_ITERATIONS  100000000
-#define MAX_CLIENTS 500
+#define TOTAL_ITERATIONS 1000000000
+#define MAX_CLIENTS 50
 #define k_CLIENTS 60
 #define ERROR_CONSTANT 0.001
 #define BUFFER_MAX 4500
@@ -111,7 +112,7 @@ void generateReport(){
 	string contents = "Client #,Arrival Time,Dropped Packets,Successful Packets,Complete Frames,Departure Time\n";
 	
 	for(int i=0; i<MAX_CLIENTS; i++){
-		
+		contents += to_string(i) + "," + to_string(client_list[i].arrival_time) + "," + to_string(client_list[i].dropped_packets) + "," + to_string(client_list[i].successful_packets) + "," + to_string(client_list[i].complete_frames) + "," + to_string(client_list[i].finish_time) + "\n";
 	}
 	
 	generateCSV("results.csv", contents);
@@ -126,7 +127,6 @@ int main(int argc, const char * argv[]) {
 	cout << "Initial data loaded..." << endl;
 	
 	cleanBuffer();
-	
 	//Start simulation
     while (iterations <= TOTAL_ITERATIONS) {
 
@@ -147,6 +147,9 @@ int main(int argc, const char * argv[]) {
 							//this are packets for the last frame for this client
 							client_list[i].finish_time = iterations;
 							current_clients--;
+                            if(current_clients == 0){
+                                iterations = TOTAL_ITERATIONS + 1;
+                            }
 						}
 					}
 				}
@@ -159,13 +162,12 @@ int main(int argc, const char * argv[]) {
             //cout << "Frame processing time: " << iterations << " microseconds" << endl;
 			
 			double prob_error = current_clients*ERROR_CONSTANT;
-			
 			for(int i=0; i<clients; i++){
 				if(client_list[i].finish_time == -1){ //client is in system
 					int packets = getPacketsForFrameSize(frames[client_list[i].current_frame]);
 					int error_flag = false;
 					for(int j=0; j<packets; j++){
-						if(rand() <= prob_error){
+						if(((double) rand() / (RAND_MAX)) <= prob_error){
 							//packet error
 							client_list[i].dropped_packets++;
 							error_flag = true;
@@ -186,11 +188,12 @@ int main(int argc, const char * argv[]) {
         
         if (iterations % 2000000 == 0) {
             //cout << "New client arrives time: " << iterations << " microseconds" << endl;
-			
-			Client new_client = *new Client;
-			new_client.arrival_time = iterations;
-			client_list[clients++] = new_client;
-			current_clients++;
+            if(clients < MAX_CLIENTS){
+                Client new_client = *new Client;
+                new_client.arrival_time = iterations;
+                client_list[clients++] = new_client;
+                current_clients++;
+            }
         }
         
         iterations++;
